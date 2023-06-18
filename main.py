@@ -18,7 +18,8 @@ class BaseWindow:
 
         # self.title.set(title)
         self.base_win.title(title)
-
+        # for i in range(2):
+        self.base_win.columnconfigure(0, weight=1, minsize=40)
         self.status_var.set("Ready ..")
 
         self.frm_main = ttk.Frame(self.base_win)
@@ -28,7 +29,7 @@ class BaseWindow:
         self.scrl_output_widget.grid(column=0, row=1, sticky='we')
 
         self.status_bar = ttk.Label(self.base_win, textvariable=self.status_var, relief=tk.SUNKEN)
-        self.status_bar.grid(column=0, row=3, sticky='we')
+        self.status_bar.grid(column=0, row=2, sticky='we')
 
 
 class ProcessTest(BaseWindow):
@@ -46,10 +47,9 @@ class ProcessTest(BaseWindow):
         cmd_handle.run()
 
     def cb_nonblocking(self):
-        pass
-        # cmd = 'cat file.txt'
-        # cmd_handle = ProcessManager(cmd, self.status_var, self.scrl_output_widget, dbg=True)
-        # cmd_handle.run()
+        cmd = 'cat file.txt'
+        cmd_handle = ProcessManager(cmd, self.status_var, self.scrl_output_widget, dbg=True)
+        cmd_handle.run()
 
 
 if __name__ == '__main__':

@@ -31,16 +31,22 @@ class ProcessManager:
         if self.flg_blocking:
             process_out = subprocess.run(self.cmd, shell=True, capture_output=True)
         else:
-            process_out = subprocess.Popen(self.cmd, shell=True, stdout=subprocess.PIPE)
+            process_out = subprocess.Popen(self.cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return process_out
 
     def _enqueue_process_output(self, process_out):
-        for line in iter(process_out.readline, b''):
-            self.process_output_q.put(line)
-        process_out.close()
+        if self.dbg:
+            print('_enqueue_process_output(), stdout =', process_out.stdout.read())
+        if process_out.stdout.read() != b'':
+            for line in iter(process_out.readline, b''):
+                self.process_output_q.put(line)
+            process_out.close()
 
     def _enqueue_process_status(self, process_out):
         # return and store the process status (0=success else failed)s to queue
+        process_state = process_out.wait()
+        if process_state != 0:
+            self.process_out_buff.append(process_out.stderr.read().decode('utf-8'))
         self.process_end_state_q.put(process_out.wait())
 
     @staticmethod
@@ -58,9 +64,9 @@ class ProcessManager:
             else:
                 if process_state != 0:
                     self.scrolled_output_widget.insert(tk.INSERT,
-                                                       f"Error: process exited, error code: {process_state}\n")
+                                                       f"Error: Process exited with exit code: {process_state}\n", 'err')
                     for itm in self.process_out_buff:
-                        self.scrolled_output_widget.insert(tk.INSERT, itm)
+                        self.scrolled_output_widget.insert(tk.INSERT, itm, 'err')
                     self.flg_error = True
                 self.flg_finished = True
                 break
@@ -88,7 +94,7 @@ class ProcessManager:
                     print(line)
         self.process_status.set("Ready.")
         if self.dbg:
-            print("_process_output_monitor() thread finished ...")
+            print("_process_output_monitor() thread finished !!")
 
     def run(self):
         if not self.cmd:
@@ -97,6 +103,11 @@ class ProcessManager:
         # blocking call is useful when you are sure process will run and finish quickly
         # if process takes long time it may render tkinter gui unresponsive consider nonblocking call
         process_out = self._run_subprocess()  # non/blocking type handled internally by _run_subprocess function
+        if self.dbg:
+            if self.flg_blocking:
+                print('subprocess output:', process_out)
+            else:
+                print('subprocess output:', process_out.stdout.read())
         if self.flg_blocking:
             if process_out.returncode == 0:
                 if self.widget_tk is not None:
@@ -111,11 +122,14 @@ class ProcessManager:
                     self.scrolled_output_widget.insert(tk.INSERT, process_out.stdout.decode("utf-8"))
             else:
                 self.scrolled_output_widget.insert(tk.INSERT,
-                                                   f"Error: Process Exited with Error, Exit Code: {process_out.returncode}\n",
+                                                   f"Error: Process exited with exit code: {process_out.returncode}\n",
+                                                   "err")
+                self.scrolled_output_widget.insert(tk.INSERT,
+                                                   f"{process_out.stderr.decode('utf-8')}\n",
                                                    "err")
                 self.scrolled_output_widget.insert(tk.INSERT, process_out.stdout.decode("utf-8"), "err")
                 if self.dbg:
-                    print("Error: ", process_out.stdout.decode("utf-8"))
+                    print("Error: ", process_out.stderr.decode("utf-8"))
         else:
             # Non blocking
             process_out_q_thread = Thread(target=self._enqueue_process_output, args=(process_out,), daemon=True)
