@@ -5,11 +5,13 @@ import tkinter as tk
 
 
 class ProcessManager:
-    def __init__(self, cmd, status_var, output_widget, blocking=False, widget_tk=None):
+    def __init__(self, cmd, status_var, output_widget, blocking=False, widget_tk=None, dbg=False):
         self.cmd = cmd
         self.process_status = status_var  # Sets GUI status bar variable ref to object var
         # set base window tkinter widget references
         self.scrolled_output_widget = output_widget
+        self.scrolled_output_widget.tag_config("err", foreground="red")
+        self.scrolled_output_widget.tag_config("prc_cmd", foreground="green")
         self.widget_tk = widget_tk
         # Defines queues for process management
         self.process_end_state_q = Queue()
@@ -23,7 +25,7 @@ class ProcessManager:
         self.process_out_buff = []
 
         # set this variable to true for debugging
-        self.dbg = True
+        self.dbg = dbg
 
     def _run_subprocess(self):
         if self.flg_blocking:
@@ -105,12 +107,26 @@ class ProcessManager:
                             if len(item) != 0:
                                 self.widget_tk.insert(idx, item)
                                 idx = +1
-                self.scrolled_output_widget.insert(tk.INSERT, process_out.stdout.decode("utf-8"))
+                else:
+                    self.scrolled_output_widget.insert(tk.INSERT, process_out.stdout.decode("utf-8"))
             else:
                 self.scrolled_output_widget.insert(tk.INSERT,
-                                            f"Error: Process Exited with Error, Exit Code: {process_out.returncode}\n")
-                self.scrolled_output_widget.insert(tk.INSERT, process_out.stdout.decode("utf-8"))
-                print("Error: ", process_out.stdout.decode("utf-8"))
+                                                   f"Error: Process Exited with Error, Exit Code: {process_out.returncode}\n",
+                                                   "err")
+                self.scrolled_output_widget.insert(tk.INSERT, process_out.stdout.decode("utf-8"), "err")
+                if self.dbg:
+                    print("Error: ", process_out.stdout.decode("utf-8"))
         else:
-            # TODO Non blocking
-            pass
+            # Non blocking
+            process_out_q_thread = Thread(target=self._enqueue_process_output, args=(process_out,), daemon=True)
+            process_status_q_thread = Thread(target=self._enqueue_process_status, args=(process_out,), daemon=True)
+
+            process_cmd_out_thread = Thread(target=self._process_output_monitor, daemon=True)
+            process_cmd_state_thread = Thread(target=self._process_state_monitor, daemon=True)
+
+            process_out_q_thread.start()
+            process_status_q_thread.start()
+            process_cmd_out_thread.start()
+            process_cmd_state_thread.start()
+            if self.dbg:
+                print("method run() finished for non-blocking call, return to GUI")
