@@ -1,3 +1,8 @@
+"""
+Author - Bhanu Pratap Singh
+This module provides class interface for subprocess with blocking and non-blocking call.
+Composite class uses tkinter widget object and redirect information to right tk widgets.
+"""
 import subprocess
 from queue import Queue, Empty
 from threading import Thread
@@ -100,6 +105,8 @@ class ProcessManager:
         if not self.cmd:
             print("No command to execute.")
             return
+        else:
+            self.scrolled_output_widget.insert(tk.INSERT, self.cmd)
         # blocking call is useful when you are sure process will run and finish quickly
         # if process takes long time it may render tkinter gui unresponsive consider nonblocking call
         process_out = self._run_subprocess()  # non/blocking type handled internally by _run_subprocess function
@@ -130,6 +137,7 @@ class ProcessManager:
                 self.scrolled_output_widget.insert(tk.INSERT, process_out.stdout.decode("utf-8"), "err")
                 if self.dbg:
                     print("Error: ", process_out.stderr.decode("utf-8"))
+            self.process_status.set('Ready.')
         else:
             # Non blocking
             process_out_q_thread = Thread(target=self._enqueue_process_output, args=(process_out,), daemon=True)

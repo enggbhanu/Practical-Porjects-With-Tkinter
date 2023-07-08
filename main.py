@@ -1,8 +1,8 @@
 '''
 Author : Bhanu Pratap Singh
-Date : 15-05-2023
+Example shows extending BaseWindow class to add new widget to GUI also test simple blocking non-blocking call
 '''
-
+import time
 import tkinter as tk
 from tkinter import scrolledtext
 from tkinter import ttk
@@ -43,11 +43,13 @@ class ProcessTest(BaseWindow):
 
     def cb_blocking(self):
         cmd = 'cat file.txt'
+        self.status_var.set('Busy..')
         cmd_handle = ProcessManager(cmd, self.status_var, self.scrl_output_widget, blocking=True, dbg=True)
         cmd_handle.run()
 
     def cb_nonblocking(self):
         cmd = 'cat file.txt'
+        self.status_var.set('Busy..')
         cmd_handle = ProcessManager(cmd, self.status_var, self.scrl_output_widget, dbg=True)
         cmd_handle.run()
 
