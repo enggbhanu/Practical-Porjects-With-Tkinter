@@ -42,6 +42,8 @@ class ProcessManager:
     def _enqueue_process_output(self, process_out):
         if self.dbg:
             print('_enqueue_process_output(), stdout =', process_out.stdout.read())
+        # this is OS specific case work for Linux tested on Ubuntu
+        # On Mac if condition is not required
         if process_out.stdout.read() != b'':
             for line in iter(process_out.readline, b''):
                 self.process_output_q.put(line)

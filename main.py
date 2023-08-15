@@ -1,6 +1,6 @@
 '''
 Author : Bhanu Pratap Singh
-Example shows extending BaseWindow class to add new widget to GUI also test simple blocking non-blocking call
+Example shows extending BaseWindow class to add new widget to GUI also test simple blocking and non-blocking calls
 '''
 import time
 import tkinter as tk
