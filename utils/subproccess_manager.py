@@ -97,6 +97,7 @@ class ProcessManager:
                         self.widget_tk.insert(idx, line.decode("utf-8"))
                         idx = +1
                 self.scrolled_output_widget.insert(tk.INSERT, line.decode("utf-8"))
+                self.scrolled_output_widget.yview(tk.END)
                 if self.dbg:
                     print(line)
         self.process_status.set("Ready.")
